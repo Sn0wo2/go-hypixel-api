@@ -21,6 +21,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/Sn0wo2/go-hypixel-api)](https://goreportcard.com/report/github.com/Sn0wo2/go-hypixel-api)
 [![GitHub release](https://img.shields.io/github/v/release/Sn0wo2/go-hypixel-api?color=blue)](https://github.com/Sn0wo2/go-hypixel-api/releases)
 [![License](https://img.shields.io/badge/license-GPL3.0-green.svg)](LICENSE)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FSn0wo2%2Fgo-hypixel-api.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FSn0wo2%2Fgo-hypixel-api?ref=badge_shield)
 
 Hypixel API SDK in Golang
 
@@ -55,3 +56,6 @@ Hypixel API SDK in Golang
 [GPL-3.0](LICENSE)
 
 * go-hypixel-api is not affiliated or endorsed by [Hypixel Inc](https://www.hypixel.net)
+
+
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FSn0wo2%2Fgo-hypixel-api.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2FSn0wo2%2Fgo-hypixel-api?ref=badge_large)
