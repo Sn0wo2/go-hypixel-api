@@ -35,11 +35,9 @@
 
 ---
 
-## License
 
-[Apache-2.0](LICENSE)
-
-* go-hypixel-api is not affiliated or endorsed by [Hypixel Inc](https://www.hypixel.net)
+> [!NOTE]
+> **go-hypixel-api** is not affiliated or endorsed by [Hypixel Inc](https://www.hypixel.net)
 
 
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FSn0wo2%2Fgo-hypixel-api.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2FSn0wo2%2Fgo-hypixel-api?ref=badge_large)

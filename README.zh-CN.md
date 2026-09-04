@@ -1,16 +1,12 @@
 # go-hypixel-api
 
+> Golang 编写的 Hypixel API SDK
+
 ---
 
 ## SDK 文档
+
 - [go-hypixel-api-docs](https://sn0wo2.github.io/go-hypixel-api-docs/)
-
----
-
-### README 语言
-
-[English](README.md)  
--> 简体中文
 
 ---
 
@@ -21,37 +17,26 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/Sn0wo2/go-hypixel-api)](https://goreportcard.com/report/github.com/Sn0wo2/go-hypixel-api)
 [![GitHub release](https://img.shields.io/github/v/release/Sn0wo2/go-hypixel-api?color=blue)](https://github.com/Sn0wo2/go-hypixel-api/releases)
 [![License](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FSn0wo2%2Fgo-hypixel-api.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FSn0wo2%2Fgo-hypixel-api?ref=badge_shield)
 
-Golang 编写的 Hypixel API SDK
 
----
+### README 语言
 
-## 简单快捷
-- go-hypixel-api 的 API 做到了尽可能简洁, 快速的高效进行开发, 内置了所有 Hypixel API 调用路径并封装成函数
-
-## 最小化
-- go-hypixel-api 在设计之初就希望在功能齐全情况下尽可能减小包尺寸和依赖
-
-## 支持API速率限制
-- 通过一系列 Hypixel API 返回响应头自动计算剩余请求次数并自动进行堵塞, 无需手动设置
-
-## 自由度
-- 我们希望给开发者提供更高的自由度, 使得 go-hypixel-api 的所有设置几乎都可以自主调节, 并暴露底层函数
-
-## 缓存策略支持
-- 尽管 go-hypixel-api 并不考虑内置缓存模块, 但是我们提供了较为完善的 Hook 和 Callback 机制, 允许开发者通过自己的缓存策略进行存储
-
-## 快速适配
-- 我们会尽快跟进 Hypixel API 的变化, 并在底层实现充足的自由度, 使得开发者在项目未跟进时也能快速进行适配
+[English](README.md)  
+-> 简体中文
 
 ---
 
-📕 [Hypixel API](https://api.hypixel.net)
+### 链接
 
-⚠️ [Hypixel API 政策](https://developer.hypixel.net/policies)
+- [Hypixel API](https://api.hypixel.net)
 
-## 许可证
+- [Hypixel API 政策](https://developer.hypixel.net/policies)
 
-[Apache-2.0](LICENSE)
+---
 
-* go-hypixel-api 不隶属于 [Hypixel Inc](https://www.hypixel.net) 也未被 [Hypixel Inc](https://www.hypixel.net) 所认可
+> [!NOTE]
+> **go-hypixel-api** 不隶属于 [Hypixel Inc](https://www.hypixel.net)，也未被其认可
+
+
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FSn0wo2%2Fgo-hypixel-api.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2FSn0wo2%2Fgo-hypixel-api?ref=badge_large)
