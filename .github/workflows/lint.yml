@@ -10,22 +10,22 @@ jobs:
     name: golangci-lint
     runs-on: ubuntu-latest
     steps:
+      - name: Check out code
+        uses: actions/checkout@v5
+
       - name: Set up Go
-        uses: actions/setup-go@master
+        uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
-
-      - name: Check out code
-        uses: actions/checkout@master
 
       - name: Get dependencies
         run: go mod tidy
 
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@master
+        uses: golangci/golangci-lint-action@v8
         with:
           version: latest
-          args: --timeout=10m
+          args: --timeout=10m --fix
 
       - name: Commit lint changes
         if: ${{ !github.head_ref }}
@@ -39,4 +39,4 @@ jobs:
       - name: Create commit lint change pr
         if: ${{ !github.head_ref }}
         continue-on-error: true
-        uses: peter-evans/create-pull-request@main
+        uses: peter-evans/create-pull-request@v7
