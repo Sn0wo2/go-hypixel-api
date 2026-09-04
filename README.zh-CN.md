@@ -20,7 +20,7 @@
 [![Dependabot Updates](https://github.com/Sn0wo2/go-hypixel-api/actions/workflows/dependabot/dependabot-updates/badge.svg)](https://github.com/Sn0wo2/go-hypixel-api/actions/workflows/dependabot/dependabot-updates)
 [![Go Report Card](https://goreportcard.com/badge/github.com/Sn0wo2/go-hypixel-api)](https://goreportcard.com/report/github.com/Sn0wo2/go-hypixel-api)
 [![GitHub release](https://img.shields.io/github/v/release/Sn0wo2/go-hypixel-api?color=blue)](https://github.com/Sn0wo2/go-hypixel-api/releases)
-[![License](https://img.shields.io/badge/license-GPL3.0-green.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE)
 
 Golang 编写的 Hypixel API SDK
 
@@ -52,6 +52,6 @@ Golang 编写的 Hypixel API SDK
 
 ## 许可证
 
-[GPL-3.0](LICENSE)
+[Apache-2.0](LICENSE)
 
 * go-hypixel-api 不隶属于 [Hypixel Inc](https://www.hypixel.net) 也未被 [Hypixel Inc](https://www.hypixel.net) 所认可
