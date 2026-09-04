@@ -84,7 +84,7 @@ func TestSetters(t *testing.T) {
 	})
 }
 
-func TestGetFullPath(t *testing.T) {
+func TestClient_Get_URLBuilding(t *testing.T) {
 	tests := []struct {
 		name     string
 		baseURL  string
@@ -119,10 +119,18 @@ func TestGetFullPath(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client := &Client{baseURL: tt.baseURL}
-			result := client.GetFullPath(tt.path)
-			if result != tt.expected {
-				t.Errorf("GetFullPath() = %v, want %v", result, tt.expected)
+			client := NewClient("test-key", nil)
+			client.SetBaseURL(tt.baseURL)
+			var gotURL string
+			client.SetPreRequestHook(func(r Request) (Response, error) {
+				gotURL = r.URL
+				return Response{Status: http.StatusOK}, nil
+			})
+			if _, err := client.Get(Request{Path: tt.path}); err != nil {
+				t.Fatalf("Get() returned unexpected error: %v", err)
+			}
+			if gotURL != tt.expected {
+				t.Errorf("Get() built URL = %v, want %v", gotURL, tt.expected)
 			}
 		})
 	}

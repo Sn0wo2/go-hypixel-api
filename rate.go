@@ -10,27 +10,52 @@ import (
 )
 
 type RateLimit struct {
-	remaining atomic.Int32  // -1 == unknown, >0 == calls left
-	resetAt   atomic.Value  // holds time.Time
-	mu        sync.Mutex    // protects waitCh
-	waitCh    chan struct{} // closed when reset time is reached
+	remaining atomic.Int32
+	limit     atomic.Int32
+	resetAt   atomic.Value
+	mu        sync.Mutex
+	waitCh    chan struct{}
 }
 
 func NewRateLimit() *RateLimit {
 	r := &RateLimit{}
 	r.remaining.Store(-1)
+	r.limit.Store(-1)
 	r.resetAt.Store(time.Time{})
 	return r
 }
 
-// WaitIfNeeded blocks until rate-limit reset if remaining ≤ 0 and resetAt is in the future.
-func (r *RateLimit) WaitIfNeeded() {
+func (r *RateLimit) Reset() {
+	r.remaining.Store(-1)
+	r.limit.Store(-1)
+	r.resetAt.Store(time.Time{})
+}
+
+func (r *RateLimit) GetRemaining() int32 {
+	return r.remaining.Load()
+}
+
+func (r *RateLimit) GetLimit() int32 {
+	return r.limit.Load()
+}
+
+func (r *RateLimit) GetResetAt() time.Time {
+	if val := r.resetAt.Load(); val != nil {
+		return val.(time.Time)
+	}
+	return time.Time{}
+}
+
+func (r *RateLimit) String() string {
+	return strconv.Itoa(int(r.remaining.Load())) + " remaining until " + r.GetResetAt().Format(time.RFC3339)
+}
+
+func (r *RateLimit) waitIfNeeded() {
 	for {
 		r.mu.Lock()
-		rem := r.remaining.Load()
-		reset := r.resetAt.Load().(time.Time)
+		reset := r.GetResetAt()
 
-		if rem > 0 || reset.IsZero() || time.Now().After(reset) {
+		if r.remaining.Load() > 0 || reset.IsZero() || time.Now().After(reset) {
 			r.mu.Unlock()
 			return
 		}
@@ -40,8 +65,8 @@ func (r *RateLimit) WaitIfNeeded() {
 			r.waitCh = ch
 			go func(ch chan struct{}, reset time.Time) {
 				sleep := time.Until(reset)
-				if m := 5 * time.Minute; sleep > m { // m: max hypixel api reset cd
-					sleep = m
+				if sleep > 5*time.Minute {
+					sleep = 5 * time.Minute
 				}
 				time.Sleep(sleep)
 				r.mu.Lock()
@@ -58,58 +83,45 @@ func (r *RateLimit) WaitIfNeeded() {
 	}
 }
 
-// UpdateFromResponse updates rate limit state based on the HTTP response.
-func (r *RateLimit) UpdateFromResponse(resp *http.Response) error {
-	if resetStr := resp.Header.Get("RateLimit-Reset"); resetStr != "" {
-		if secs, err := strconv.Atoi(resetStr); err == nil {
-			r.resetAt.Store(time.Now().Add(time.Duration(secs) * time.Second))
-		} else {
+func (r *RateLimit) updateFromResponse(resp *http.Response) error {
+	if limitStr := resp.Header.Get("RateLimit-Limit"); limitStr != "" {
+		lim, err := strconv.Atoi(limitStr)
+		if err != nil {
 			return err
 		}
+		if lim > 0 && lim <= math.MaxInt32 {
+			r.limit.Store(int32(lim))
+		}
+	}
+
+	if retryAfter := resp.Header.Get("Retry-After"); retryAfter != "" {
+		if secs, err := strconv.Atoi(retryAfter); err == nil {
+			r.resetAt.Store(time.Now().Add(time.Duration(secs) * time.Second))
+		} else if t, err := http.ParseTime(retryAfter); err == nil {
+			r.resetAt.Store(t)
+		}
+	} else if resetStr := resp.Header.Get("RateLimit-Reset"); resetStr != "" {
+		secs, err := strconv.Atoi(resetStr)
+		if err != nil {
+			return err
+		}
+		r.resetAt.Store(time.Now().Add(time.Duration(secs) * time.Second))
+	} else if resp.StatusCode == http.StatusTooManyRequests {
+		r.resetAt.Store(time.Now().Add(time.Second))
 	}
 
 	remStr := resp.Header.Get("RateLimit-Remaining")
 	if remStr == "" {
 		return nil
 	}
-	// when status code 429, remaining is fake(0)
-	//
-	// 429 A request limit has been reached, usually this is due to the limit on the key being reached but can also be triggered by a global throttle.
-	if resp.StatusCode == 429 && remStr == "0" {
-		r.remaining.Add(-1)
-		return nil
-	}
 	rem, err := strconv.Atoi(remStr)
 	if err != nil {
 		return err
 	}
-	// code ql
-	if rem > math.MinInt32 && rem <= math.MaxInt32 {
+	if rem >= 0 && rem <= math.MaxInt32 {
 		r.remaining.Store(int32(rem))
 	} else {
-		// fallback
 		r.remaining.Store(-1)
 	}
 	return nil
-}
-
-// Reset clears all rate-limit state
-func (r *RateLimit) Reset() {
-	r.remaining.Store(-1)
-	r.resetAt.Store(time.Time{})
-}
-
-func (r *RateLimit) GetRemaining() int32 {
-	return r.remaining.Load()
-}
-
-func (r *RateLimit) GetResetAt() time.Time {
-	return r.resetAt.Load().(time.Time)
-}
-
-// String impl fmt.Stringer
-func (r *RateLimit) String() string {
-	reset := r.resetAt.Load().(time.Time)
-	return strconv.Itoa(int(r.remaining.Load())) +
-		" remaining until " + reset.Format(time.RFC3339)
 }

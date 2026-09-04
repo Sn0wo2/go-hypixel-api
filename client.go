@@ -2,7 +2,6 @@ package hypixel
 
 import (
 	"net/http"
-	"strings"
 )
 
 type PreRequestHook func(request Request) (Response, error)
@@ -17,9 +16,6 @@ type Client struct {
 	callBack       Callback
 }
 
-// NewClient creates a new hypixel client
-// key is your hypixel api key
-//
 // https://api.hypixel.net/
 func NewClient(key string, rate *RateLimit) *Client {
 	return &Client{
@@ -46,18 +42,6 @@ func (c *Client) GetRate() *RateLimit {
 	return c.rate
 }
 
-func (c *Client) GetPreRequestHook() PreRequestHook {
-	return c.preRequestHook
-}
-
-func (c *Client) GetCallback() Callback {
-	return c.callBack
-}
-
-func (c *Client) GetFullPath(path string) string {
-	return strings.TrimRight(c.GetBaseURL(), "/") + "/" + strings.TrimLeft(path, "/")
-}
-
 func (c *Client) SetBaseURL(url string) {
 	c.baseURL = url
 }
@@ -80,4 +64,15 @@ func (c *Client) SetPreRequestHook(beforeSend PreRequestHook) {
 
 func (c *Client) SetCallback(callBack Callback) {
 	c.callBack = callBack
+}
+
+func (c *Client) authHeader(header ...http.Header) http.Header {
+	var h http.Header
+	if len(header) == 0 {
+		h = http.Header{}
+	} else {
+		h = header[0]
+	}
+	h.Set("API-Key", c.apiKey)
+	return h
 }

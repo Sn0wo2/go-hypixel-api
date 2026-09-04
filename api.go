@@ -2,8 +2,10 @@ package hypixel
 
 import (
 	"bytes"
+	"encoding/json"
 	"io"
 	"net/http"
+	"strings"
 )
 
 type Request struct {
@@ -23,74 +25,72 @@ type Response struct {
 	Content []byte
 }
 
+// Decode parses the JSON-encoded content of the response into a value of type T.
+func (r Response) Decode[T any]() (T, error) {
+	var val T
+	err := json.Unmarshal(r.Content, &val)
+	return val, err
+}
+
 // Get Hypixel API HTTP Request
 func (c *Client) Get(r Request) (Response, error) {
 	if r.Method == "" {
 		r.Method = http.MethodGet
 	}
-	r.URL = c.GetFullPath(r.Path)
+	r.URL = strings.TrimRight(c.baseURL, "/") + "/" + strings.TrimLeft(r.Path, "/")
 	if r.Params == nil {
 		r.Params = Params{}
 	}
-	r.URL = r.Params.String(r.URL)
+	r.URL = r.Params.buildURL(r.URL)
 
-	if c.GetPreRequestHook() != nil {
-		response, err := c.GetPreRequestHook()(r)
-		if err == nil {
+	if c.preRequestHook != nil {
+		response, err := c.preRequestHook(r)
+		if err != nil {
+			return Response{}, err
+		}
+		if response.Status != 0 {
 			return response, nil
 		}
 	}
-	req, err := http.NewRequest(r.Method, r.URL,
-		func() io.Reader {
-			if r.Payload != nil {
-				return bytes.NewReader(r.Payload)
-			}
-			return nil
-		}(),
-	)
+	var body io.Reader
+	if len(r.Payload) > 0 {
+		body = bytes.NewReader(r.Payload)
+	}
+	req, err := http.NewRequest(r.Method, r.URL, body)
 	if err != nil {
 		return Response{}, err
 	}
 	if r.Header != nil {
 		req.Header = r.Header
 	}
-	if c.GetRate() != nil {
-		c.GetRate().WaitIfNeeded()
+	if c.rate != nil {
+		c.rate.waitIfNeeded()
 	}
-	rsp, err := c.GetHTTPClient().Do(req)
+	rsp, err := c.httpClient.Do(req)
 	if err != nil {
+		if c.callBack != nil {
+			return c.callBack(r, Response{}, err)
+		}
 		return Response{}, err
 	}
-	defer rsp.Body.Close()
-	if c.GetRate() != nil {
-		_ = c.GetRate().UpdateFromResponse(rsp)
+	defer func() {
+		_ = rsp.Body.Close()
+	}()
+	if c.rate != nil {
+		_ = c.rate.updateFromResponse(rsp)
 	}
 	content, err := io.ReadAll(rsp.Body)
 	if err != nil {
+		if c.callBack != nil {
+			return c.callBack(r, Response{Header: rsp.Header, Path: r.Path, URL: r.URL, Status: rsp.StatusCode}, err)
+		}
 		return Response{}, err
 	}
 	resp := Response{Header: rsp.Header, Path: r.Path, URL: r.URL, Status: rsp.StatusCode, Content: content}
-	if c.GetCallback() != nil {
-		response, err := c.GetCallback()(r, resp, err)
-		if err == nil {
-			return response, nil
-		}
+	if c.callBack != nil {
+		return c.callBack(r, resp, nil)
 	}
 	return resp, nil
-}
-
-// AuthHeader Add api key to header
-//
-// https://api.hypixel.net/#section/Authentication/ApiKey
-func (c *Client) AuthHeader(header ...http.Header) http.Header {
-	var h http.Header
-	if len(header) == 0 {
-		h = http.Header{}
-	} else {
-		h = header[0]
-	}
-	h.Set("API-Key", c.GetAPIKey())
-	return h
 }
 
 // GetPlayerData Data of a specific player, including game stats
@@ -100,7 +100,7 @@ func (c *Client) AuthHeader(header ...http.Header) http.Header {
 func (c *Client) GetPlayerData(uuid string) (Response, error) {
 	return c.Get(Request{
 		Method: http.MethodGet,
-		Header: c.AuthHeader(),
+		Header: c.authHeader(),
 		Path:   "player",
 		Params: Params{
 			"uuid": uuid,
@@ -115,7 +115,7 @@ func (c *Client) GetPlayerData(uuid string) (Response, error) {
 func (c *Client) GetRecentGames(uuid string) (Response, error) {
 	return c.Get(Request{
 		Method: http.MethodGet,
-		Header: c.AuthHeader(),
+		Header: c.authHeader(),
 		Path:   "recentgames",
 		Params: Params{
 			"uuid": uuid,
@@ -130,7 +130,7 @@ func (c *Client) GetRecentGames(uuid string) (Response, error) {
 func (c *Client) GetStatus(uuid string) (Response, error) {
 	return c.Get(Request{
 		Method: http.MethodGet,
-		Header: c.AuthHeader(),
+		Header: c.authHeader(),
 		Path:   "status",
 		Params: Params{
 			"uuid": uuid,
@@ -145,7 +145,7 @@ func (c *Client) GetStatus(uuid string) (Response, error) {
 func (c *Client) GetGuild(id, player, name string) (Response, error) {
 	return c.Get(Request{
 		Method: http.MethodGet,
-		Header: c.AuthHeader(),
+		Header: c.authHeader(),
 		Path:   "guild",
 		Params: Params{
 			"id":     id,
@@ -226,6 +226,18 @@ func (c *Client) GetVanityCompanions() (Response, error) {
 	})
 }
 
+// GetResourcePacks Active Resource Packs
+//
+// Returns information and URLs for resource packs used with content for latest versions of Minecraft.
+//
+// https://api.hypixel.net/#tag/Resources/paths/~1v2~1resources~1packs/get
+func (c *Client) GetResourcePacks() (Response, error) {
+	return c.Get(Request{
+		Method: http.MethodGet,
+		Path:   "resources/packs",
+	})
+}
+
 // GetSkyBlockCollections Collections
 // Information regarding Collections in the SkyBlock game.
 //
@@ -288,7 +300,7 @@ func (c *Client) GetSkyBlockCurrentBingoEvent() (Response, error) {
 func (c *Client) GetSkyBlockNews() (Response, error) {
 	return c.Get(Request{
 		Method: http.MethodGet,
-		Header: c.AuthHeader(),
+		Header: c.authHeader(),
 		Path:   "skyblock/news",
 	})
 }
@@ -301,7 +313,7 @@ func (c *Client) GetSkyBlockNews() (Response, error) {
 func (c *Client) GetAuctions(uuid, player, profile string) (Response, error) {
 	return c.Get(Request{
 		Method: http.MethodGet,
-		Header: c.AuthHeader(),
+		Header: c.authHeader(),
 		Path:   "skyblock/auction",
 		Params: Params{
 			"uuid":    uuid,
@@ -369,7 +381,7 @@ func (c *Client) GetBazaar() (Response, error) {
 func (c *Client) GetProfileByUUID(profile string) (Response, error) {
 	return c.Get(Request{
 		Method: http.MethodGet,
-		Header: c.AuthHeader(),
+		Header: c.authHeader(),
 		Path:   "skyblock/profile",
 		Params: Params{
 			"profile": profile,
@@ -384,7 +396,7 @@ func (c *Client) GetProfileByUUID(profile string) (Response, error) {
 func (c *Client) GetProfilesByPlayer(uuid string) (Response, error) {
 	return c.Get(Request{
 		Method: http.MethodGet,
-		Header: c.AuthHeader(),
+		Header: c.authHeader(),
 		Path:   "skyblock/profiles",
 		Params: Params{
 			"uuid": uuid,
@@ -400,7 +412,7 @@ func (c *Client) GetProfilesByPlayer(uuid string) (Response, error) {
 func (c *Client) GetMuseumData(profile string) (Response, error) {
 	return c.Get(Request{
 		Method: http.MethodGet,
-		Header: c.AuthHeader(),
+		Header: c.authHeader(),
 		Path:   "skyblock/museum",
 		Params: Params{
 			"profile": profile,
@@ -416,7 +428,7 @@ func (c *Client) GetMuseumData(profile string) (Response, error) {
 func (c *Client) GetGardenData(profile string) (Response, error) {
 	return c.Get(Request{
 		Method: http.MethodGet,
-		Header: c.AuthHeader(),
+		Header: c.authHeader(),
 		Path:   "skyblock/garden",
 		Params: Params{
 			"profile": profile,
@@ -432,7 +444,7 @@ func (c *Client) GetGardenData(profile string) (Response, error) {
 func (c *Client) GetBingoData(uuid string) (Response, error) {
 	return c.Get(Request{
 		Method: http.MethodGet,
-		Header: c.AuthHeader(),
+		Header: c.authHeader(),
 		Path:   "skyblock/bingo",
 		Params: Params{
 			"uuid": uuid,
@@ -451,7 +463,7 @@ func (c *Client) GetActiveOrUpcomingFireSales() (Response, error) {
 	})
 }
 
-// GetCurrentlyActivePublicHouses currently active public houses.
+// GetCurrentlyActivePublicHouses The currently active public houses.
 // This data may be cached for a short period of time.
 // NEED API Key
 //
@@ -459,7 +471,7 @@ func (c *Client) GetActiveOrUpcomingFireSales() (Response, error) {
 func (c *Client) GetCurrentlyActivePublicHouses() (Response, error) {
 	return c.Get(Request{
 		Method: http.MethodGet,
-		Header: c.AuthHeader(),
+		Header: c.authHeader(),
 		Path:   "housing/active",
 	})
 }
@@ -472,7 +484,7 @@ func (c *Client) GetCurrentlyActivePublicHouses() (Response, error) {
 func (c *Client) GetSpecificHouseInformation(house string) (Response, error) {
 	return c.Get(Request{
 		Method: http.MethodGet,
-		Header: c.AuthHeader(),
+		Header: c.authHeader(),
 		Path:   "housing/house",
 		Params: Params{
 			"house": house,
@@ -488,7 +500,7 @@ func (c *Client) GetSpecificHouseInformation(house string) (Response, error) {
 func (c *Client) GetSpecificPlayerPublicHouses(player string) (Response, error) {
 	return c.Get(Request{
 		Method: http.MethodGet,
-		Header: c.AuthHeader(),
+		Header: c.authHeader(),
 		Path:   "housing/houses",
 		Params: Params{
 			"player": player,
@@ -503,7 +515,7 @@ func (c *Client) GetSpecificPlayerPublicHouses(player string) (Response, error) 
 func (c *Client) GetActiveNetworkBoosters() (Response, error) {
 	return c.Get(Request{
 		Method: http.MethodGet,
-		Header: c.AuthHeader(),
+		Header: c.authHeader(),
 		Path:   "boosters",
 	})
 }
@@ -515,7 +527,7 @@ func (c *Client) GetActiveNetworkBoosters() (Response, error) {
 func (c *Client) GetCurrentPlayerCounts() (Response, error) {
 	return c.Get(Request{
 		Method: http.MethodGet,
-		Header: c.AuthHeader(),
+		Header: c.authHeader(),
 		Path:   "counts",
 	})
 }
@@ -527,7 +539,7 @@ func (c *Client) GetCurrentPlayerCounts() (Response, error) {
 func (c *Client) GetCurrentLeaderboards() (Response, error) {
 	return c.Get(Request{
 		Method: http.MethodGet,
-		Header: c.AuthHeader(),
+		Header: c.authHeader(),
 		Path:   "leaderboards",
 	})
 }
@@ -539,7 +551,7 @@ func (c *Client) GetCurrentLeaderboards() (Response, error) {
 func (c *Client) GetPunishmentStatistics() (Response, error) {
 	return c.Get(Request{
 		Method: http.MethodGet,
-		Header: c.AuthHeader(),
+		Header: c.authHeader(),
 		Path:   "punishmentstats",
 	})
 }

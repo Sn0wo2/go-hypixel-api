@@ -5,13 +5,32 @@ import (
 	"net/url"
 )
 
-// Params http query
-// use fmt.Sprint parse to string
-type Params map[any]any
+type Params map[string]any
 
-// String Generate url string
-// If value is empty, it will be ignored
-func (p Params) String(full string) string {
+func (p Params) Get[T any](k string) T {
+	val, ok := p[k]
+	if !ok {
+		var zero T
+		return zero
+	}
+	typed, _ := val.(T)
+	return typed
+}
+
+func (p Params) Set[T any](k string, v T) {
+	p[k] = v
+}
+
+func (p Params) Del(k string) {
+	delete(p, k)
+}
+
+func (p Params) Has(k string) bool {
+	_, ok := p[k]
+	return ok
+}
+
+func (p Params) buildURL(full string) string {
 	if len(p) == 0 {
 		return full
 	}
@@ -22,31 +41,17 @@ func (p Params) String(full string) string {
 
 	q := u.Query()
 	for k, v := range p {
+		if v == nil {
+			continue
+		}
 		val := fmt.Sprint(v)
 		if val == "" {
 			continue
 		}
-		q.Set(fmt.Sprint(k), val)
+		q.Set(k, val)
 	}
 
 	u.RawQuery = q.Encode()
 
 	return u.String()
-}
-
-func (p Params) Get(k any) any {
-	return p[k]
-}
-
-func (p Params) Set(k, v any) {
-	p[k] = v
-}
-
-func (p Params) Del(k any) {
-	delete(p, k)
-}
-
-func (p Params) Has(k any) bool {
-	_, ok := p[k]
-	return ok
 }

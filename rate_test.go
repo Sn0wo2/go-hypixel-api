@@ -1,4 +1,3 @@
-// rate_limit_test.go
 package hypixel
 
 import (
@@ -27,7 +26,7 @@ func makeResp(body, rem, reset string, status int) *http.Response {
 func TestUpdateFromResponse_Throttle(t *testing.T) {
 	r := NewRateLimit()
 	resp := makeResp(`{"throttle":true}`, "", "", 429)
-	if err := r.UpdateFromResponse(resp); err != nil {
+	if err := r.updateFromResponse(resp); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if got := r.remaining.Load(); got != -1 {
@@ -39,7 +38,7 @@ func TestUpdateFromResponse_ResetHeader(t *testing.T) {
 	r := NewRateLimit()
 	resp := makeResp(`{"throttle":false}`, "", "2", 200)
 	start := time.Now()
-	if err := r.UpdateFromResponse(resp); err != nil {
+	if err := r.updateFromResponse(resp); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	reset := r.resetAt.Load().(time.Time)
@@ -52,7 +51,7 @@ func TestUpdateFromResponse_ResetHeader(t *testing.T) {
 func TestUpdateFromResponse_RemainingHeader(t *testing.T) {
 	r := NewRateLimit()
 	resp := makeResp(`{"throttle":false}`, "5", "", 200)
-	if err := r.UpdateFromResponse(resp); err != nil {
+	if err := r.updateFromResponse(resp); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if got := r.remaining.Load(); got != 5 {
@@ -88,9 +87,9 @@ func TestWaitIfNeeded_NoWaitOnPositive(t *testing.T) {
 	r := NewRateLimit()
 	r.remaining.Store(1)
 	before := time.Now()
-	r.WaitIfNeeded()
+	r.waitIfNeeded()
 	if time.Since(before) > 50*time.Millisecond {
-		t.Errorf("WaitIfNeeded slept unexpectedly")
+		t.Errorf("waitIfNeeded slept unexpectedly")
 	}
 }
 
@@ -99,8 +98,8 @@ func TestWaitIfNeeded_NoWaitOnPastReset(t *testing.T) {
 	r.remaining.Store(0)
 	r.resetAt.Store(time.Now().Add(-time.Minute))
 	before := time.Now()
-	r.WaitIfNeeded()
+	r.waitIfNeeded()
 	if time.Since(before) > 50*time.Millisecond {
-		t.Errorf("WaitIfNeeded slept for past reset")
+		t.Errorf("waitIfNeeded slept for past reset")
 	}
 }
