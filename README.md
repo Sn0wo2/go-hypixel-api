@@ -2,14 +2,6 @@
 
 > Hypixel API SDK in Golang
 
----
-
-## Docs
-
-- [go-hypixel-api-docs](https://sn0wo2.github.io/go-hypixel-api-docs/)
-
----
-
 [![ci](https://github.com/Sn0wo2/go-hypixel-api/actions/workflows/ci.yml/badge.svg)](https://github.com/Sn0wo2/go-hypixel-api/actions/workflows/ci.yml)
 [![lint](https://github.com/Sn0wo2/go-hypixel-api/actions/workflows/lint.yml/badge.svg)](https://github.com/Sn0wo2/go-hypixel-api/actions/workflows/lint.yml)
 [![CodeQL Advanced](https://github.com/Sn0wo2/go-hypixel-api/actions/workflows/codeql.yml/badge.svg)](https://github.com/Sn0wo2/go-hypixel-api/actions/workflows/codeql.yml)
@@ -19,10 +11,15 @@
 [![License](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE)
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FSn0wo2%2Fgo-hypixel-api.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FSn0wo2%2Fgo-hypixel-api?ref=badge_shield)
 
+---
+
+## Docs
+
+- [go-hypixel-api-docs](https://sn0wo2.github.io/go-hypixel-api-docs/)
 
 ### Language
 
--> English   
+-> English  
 [简体中文](README.zh-CN.md)
 
 ---
@@ -35,9 +32,7 @@
 
 ---
 
-
 > [!NOTE]
 > **go-hypixel-api** is not affiliated or endorsed by [Hypixel Inc](https://www.hypixel.net)
-
 
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FSn0wo2%2Fgo-hypixel-api.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2FSn0wo2%2Fgo-hypixel-api?ref=badge_large)
