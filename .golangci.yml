@@ -2,39 +2,82 @@ version: "2"
 
 linters:
   enable:
+    - asasalint
     - asciicheck
+    - bidichk
     - bodyclose
+    - canonicalheader
+    - contextcheck
+    - copyloopvar
+    - dogsled
     - dupl
-    - errcheck
+    - dupword
+    - durationcheck
+    - errchkjson
     - errname
+    - errorlint
     - exhaustive
+    - exptostd
+    - fatcontext
+    - forcetypeassert
+    - funcorder
+    - ginkgolinter
+    - gocheckcompilerdirectives
+    - gochecksumtype
     - gocritic
+    - gosec
+    - gosmopolitan
     - goprintffuncname
-    - govet
-    - ineffassign
+    - inamedparam
+    - interfacebloat
+    - iface
+    - intrange
+    - loggercheck
+    - maintidx
     - makezero
+    - mirror
+    - misspell
+    - musttag
+    - nilerr
+    - nilnesserr
+    - nilnil
+    - nlreturn
     - nolintlint
+    - nosprintfhostport
+    - paralleltest
+    - perfsprint
     - prealloc
     - predeclared
-    - revive
+    - promlinter
+    - protogetter
+    - recvcheck
+    - reassign
     - rowserrcheck
     - sloglint
-    - sqlclosecheck
-    - staticcheck
+    - spancheck
+    - tagalign
+    - testableexamples
+    - testifylint
+    - thelper
+    - tparallel
     - unconvert
     - unparam
-    - unused
-
-formatters:
-  enable:
-    - gofmt
-    - goimports
+    - usestdlibvars
+    - usetesting
+    - wastedassign
+    - whitespace
+    - wsl_v5
+    - zerologlint
 
 run:
+  concurrency: 4
   timeout: 5m
-  tests: false
+  modules-download-mode: readonly
 
 issues:
   max-issues-per-linter: 0
-  max-same-issues: 0
-  uniq-by-line: true
+
+formatters:
+  enable:
+    - gofumpt
+    - goimports

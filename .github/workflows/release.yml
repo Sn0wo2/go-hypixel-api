@@ -1,34 +1,92 @@
-name: go-release
+name: Release
 
 on:
   push:
-    tags:
-      - "*"
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      snapshot:
+        description: Build a snapshot without publishing
+        type: boolean
+        default: true
 
-permissions:
-  contents: write
+permissions: {}
 
-env:
-  GO_VERSION: 1.27
+concurrency:
+  group: release-${{ inputs.snapshot && 'snapshot' || 'publish' }}-${{ github.ref }}
+  cancel-in-progress: ${{ inputs.snapshot == true }}
 
 jobs:
-  goreleaser:
+  check-release:
+    if: github.ref_type == 'tag' && !inputs.snapshot
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: read
+    outputs:
+      skip: ${{ steps.release.outputs.skip }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v5
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Check for an already published release
+        id: release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/check-release.js
+
+      - name: Reuse CI checks for this commit
+        if: steps.release.outputs.skip != 'true'
+        timeout-minutes: 15
+        uses: lewagon/wait-on-check-action@v1.9.1
+        with:
+          ref: ${{ github.sha }}
+          check-name: Checks
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          allowed-conclusions: success
+
+  snapshot:
+    if: inputs.snapshot
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - name: Set up Go
-        uses: actions/setup-go@v5
+          persist-credentials: false
+
+      - uses: actions/setup-go@v7
         with:
-          go-version: ${{ env.GO_VERSION }}
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v6
+          go-version-file: go.mod
+
+      - uses: goreleaser/goreleaser-action@v7
         with:
-          # either 'goreleaser' (default) or 'goreleaser-pro'
-          distribution: goreleaser
-          version: latest
+          args: release --clean --snapshot
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  release:
+    needs: check-release
+    if: >-
+      github.ref_type == 'tag' && !inputs.snapshot &&
+      needs.check-release.outputs.skip != 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - uses: goreleaser/goreleaser-action@v7
+        with:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
