@@ -1,3 +1,5 @@
+BINARY_NAME ?= go-hypixel-api
+
 .PHONY: lint lint-fix test build clean security ci release dry-release
 
 lint:
@@ -10,10 +12,10 @@ test:
 	go test $(if $(filter 1,$(shell go env CGO_ENABLED)),-race) ./...
 
 build:
-	go build ./...
+	go build -trimpath -ldflags "-s -w" -o $(BINARY_NAME) ./cmd
 
 clean:
-	rm -rf dist
+	rm -f $(BINARY_NAME) $(BINARY_NAME).exe
 
 security:
 	go run golang.org/x/vuln/cmd/govulncheck@latest ./...

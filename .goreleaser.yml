@@ -1,10 +1,41 @@
 version: 2
 
 builds:
-  - skip: true
+  - id: app
+    main: ./cmd
+    binary: go-hypixel-api
+    env:
+      - CGO_ENABLED=0
+    goarch:
+      - amd64
+      - arm64
+    goamd64:
+      - v1
+      - v3
+    flags:
+      - -mod=readonly
+      - -trimpath
+    ldflags:
+      - -s -w
 
-checksum:
-  disable: true
+dockers_v2:
+  - images:
+      - ghcr.io/sn0wo2/{{ .ProjectName }}
+    tags:
+      - "v{{ .Version }}"
+      - "{{ if not .Prerelease }}latest{{ end }}"
+      - "beta-latest"
+    flags:
+      - '{{ if eq (index .Env "GITHUB_ACTIONS") "true" }}--cache-from=type=gha,version=2,scope={{ .ProjectName }}{{ end }}'
+      - '{{ if eq (index .Env "GITHUB_ACTIONS") "true" }}--cache-to=type=gha,version=2,mode=max,scope={{ .ProjectName }},ignore-error=true{{ end }}'
+    labels:
+      org.opencontainers.image.title: "{{ .ProjectName }}"
+      org.opencontainers.image.source: "https://github.com/Sn0wo2/{{ .ProjectName }}"
+      org.opencontainers.image.url: "https://github.com/Sn0wo2/{{ .ProjectName }}"
+      org.opencontainers.image.licenses: "Apache-2.0"
+      org.opencontainers.image.version: "{{ .Version }}"
+      org.opencontainers.image.revision: "{{ .Commit }}"
+      org.opencontainers.image.created: "{{ .Date }}"
 
 snapshot:
   version_template: "{{ .Version }}-next"
