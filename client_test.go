@@ -6,6 +6,8 @@ import (
 )
 
 func TestNewClient(t *testing.T) {
+	t.Parallel()
+
 	apiKey := "test-api-key"
 	rateLimit := &RateLimit{}
 
@@ -29,6 +31,8 @@ func TestNewClient(t *testing.T) {
 }
 
 func TestGetters(t *testing.T) {
+	t.Parallel()
+
 	customHTTP := &http.Client{}
 	client := &Client{
 		baseURL:    "https://custom.url/",
@@ -38,18 +42,24 @@ func TestGetters(t *testing.T) {
 	}
 
 	t.Run("GetBaseURL", func(t *testing.T) {
+		t.Parallel()
+
 		if got := client.GetBaseURL(); got != "https://custom.url/" {
 			t.Errorf("GetBaseURL() = %v, want %v", got, "https://custom.url/")
 		}
 	})
 
 	t.Run("GetAPIKey", func(t *testing.T) {
+		t.Parallel()
+
 		if got := client.GetAPIKey(); got != "custom-key" {
 			t.Errorf("GetAPIKey() = %v, want %v", got, "custom-key")
 		}
 	})
 
 	t.Run("GetHTTPClient", func(t *testing.T) {
+		t.Parallel()
+
 		if got := client.GetHTTPClient(); got != customHTTP {
 			t.Errorf("GetHTTPClient() = %v, want %v", got, customHTTP)
 		}
@@ -57,27 +67,38 @@ func TestGetters(t *testing.T) {
 }
 
 func TestSetters(t *testing.T) {
+	t.Parallel()
+
 	client := NewClient("initial-key", &RateLimit{})
 
 	t.Run("SetBaseURL", func(t *testing.T) {
+		t.Parallel()
+
 		newURL := "https://new.url/"
 		client.SetBaseURL(newURL)
+
 		if client.baseURL != newURL {
 			t.Errorf("SetBaseURL() failed, got %v, want %v", client.baseURL, newURL)
 		}
 	})
 
 	t.Run("SetAPIKey", func(t *testing.T) {
+		t.Parallel()
+
 		newKey := "new-key"
 		client.SetAPIKey(newKey)
+
 		if client.apiKey != newKey {
 			t.Errorf("SetAPIKey() failed, got %v, want %v", client.apiKey, newKey)
 		}
 	})
 
 	t.Run("SetHTTPClient", func(t *testing.T) {
+		t.Parallel()
+
 		newClient := &http.Client{}
 		client.SetHTTPClient(newClient)
+
 		if client.httpClient != newClient {
 			t.Errorf("SetHTTPClient() failed, got %v, want %v", client.httpClient, newClient)
 		}
@@ -85,6 +106,8 @@ func TestSetters(t *testing.T) {
 }
 
 func TestClient_Get_URLBuilding(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name     string
 		baseURL  string
@@ -119,16 +142,23 @@ func TestClient_Get_URLBuilding(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			client := NewClient("test-key", nil)
 			client.SetBaseURL(tt.baseURL)
+
 			var gotURL string
+
 			client.SetPreRequestHook(func(r Request) (Response, error) {
 				gotURL = r.URL
+
 				return Response{Status: http.StatusOK}, nil
 			})
+
 			if _, err := client.Get(Request{Path: tt.path}); err != nil {
 				t.Fatalf("Get() returned unexpected error: %v", err)
 			}
+
 			if gotURL != tt.expected {
 				t.Errorf("Get() built URL = %v, want %v", gotURL, tt.expected)
 			}

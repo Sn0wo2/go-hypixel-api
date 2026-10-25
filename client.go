@@ -4,8 +4,10 @@ import (
 	"net/http"
 )
 
-type PreRequestHook func(request Request) (Response, error)
-type Callback func(request Request, response Response, err error) (Response, error)
+type (
+	PreRequestHook func(request Request) (Response, error)
+	Callback       func(request Request, response Response, err error) (Response, error)
+)
 
 type Client struct {
 	baseURL        string
@@ -73,6 +75,8 @@ func (c *Client) authHeader(header ...http.Header) http.Header {
 	} else {
 		h = header[0]
 	}
-	h.Set("API-Key", c.apiKey)
+
+	h.Set("Api-Key", c.apiKey)
+
 	return h
 }

@@ -6,14 +6,18 @@ import (
 )
 
 func TestClient_Authentication(t *testing.T) {
+	t.Parallel()
+
 	h := http.Header{}
-	h.Set("head", "value1")
+	h.Set("Head", "value1")
+
 	c := NewClient("test1", nil)
-	if c.authHeader(h).Get("API-Key") != "test1" {
-		t.Errorf("expected 'test1', got %s", h.Get("API-Key"))
+	if c.authHeader(h).Get("Api-Key") != "test1" {
+		t.Errorf("expected 'test1', got %s", h.Get("Api-Key"))
 	}
-	if h.Get("head") != "value1" {
-		t.Errorf("expected 'value1', got %s", h.Get("head"))
+
+	if h.Get("Head") != "value1" {
+		t.Errorf("expected 'value1', got %s", h.Get("Head"))
 	}
 }
 
@@ -24,6 +28,8 @@ type sampleData struct {
 }
 
 func TestResponse_Decode(t *testing.T) {
+	t.Parallel()
+
 	resp := Response{
 		Status:  http.StatusOK,
 		Content: []byte(`{"success":true,"name":"Hypixel","count":42}`),
@@ -33,6 +39,7 @@ func TestResponse_Decode(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
+
 	if !data.Success || data.Name != "Hypixel" || data.Count != 42 {
 		t.Errorf("unexpected decoded data: %+v", data)
 	}

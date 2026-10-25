@@ -28,7 +28,9 @@ type Response struct {
 // Decode parses the JSON-encoded content of the response into a value of type T.
 func (r Response) Decode[T any]() (T, error) {
 	var val T
+
 	err := json.Unmarshal(r.Content, &val)
+
 	return val, err
 }
 
@@ -37,10 +39,12 @@ func (c *Client) Get(r Request) (Response, error) {
 	if r.Method == "" {
 		r.Method = http.MethodGet
 	}
+
 	r.URL = strings.TrimRight(c.baseURL, "/") + "/" + strings.TrimLeft(r.Path, "/")
 	if r.Params == nil {
 		r.Params = Params{}
 	}
+
 	r.URL = r.Params.buildURL(r.URL)
 
 	if c.preRequestHook != nil {
@@ -48,48 +52,61 @@ func (c *Client) Get(r Request) (Response, error) {
 		if err != nil {
 			return Response{}, err
 		}
+
 		if response.Status != 0 {
 			return response, nil
 		}
 	}
+
 	var body io.Reader
 	if len(r.Payload) > 0 {
 		body = bytes.NewReader(r.Payload)
 	}
+
 	req, err := http.NewRequest(r.Method, r.URL, body)
 	if err != nil {
 		return Response{}, err
 	}
+
 	if r.Header != nil {
 		req.Header = r.Header
 	}
+
 	if c.rate != nil {
 		c.rate.waitIfNeeded()
 	}
+
 	rsp, err := c.httpClient.Do(req)
 	if err != nil {
 		if c.callBack != nil {
 			return c.callBack(r, Response{}, err)
 		}
+
 		return Response{}, err
 	}
+
 	defer func() {
 		_ = rsp.Body.Close()
 	}()
+
 	if c.rate != nil {
 		_ = c.rate.updateFromResponse(rsp)
 	}
+
 	content, err := io.ReadAll(rsp.Body)
 	if err != nil {
 		if c.callBack != nil {
 			return c.callBack(r, Response{Header: rsp.Header, Path: r.Path, URL: r.URL, Status: rsp.StatusCode}, err)
 		}
+
 		return Response{}, err
 	}
+
 	resp := Response{Header: rsp.Header, Path: r.Path, URL: r.URL, Status: rsp.StatusCode, Content: content}
 	if c.callBack != nil {
 		return c.callBack(r, resp, nil)
 	}
+
 	return resp, nil
 }
 

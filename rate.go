@@ -22,6 +22,7 @@ func NewRateLimit() *RateLimit {
 	r.remaining.Store(-1)
 	r.limit.Store(-1)
 	r.resetAt.Store(time.Time{})
+
 	return r
 }
 
@@ -40,9 +41,10 @@ func (r *RateLimit) GetLimit() int32 {
 }
 
 func (r *RateLimit) GetResetAt() time.Time {
-	if val := r.resetAt.Load(); val != nil {
-		return val.(time.Time)
+	if val, ok := r.resetAt.Load().(time.Time); ok {
+		return val
 	}
+
 	return time.Time{}
 }
 
@@ -57,20 +59,24 @@ func (r *RateLimit) waitIfNeeded() {
 
 		if r.remaining.Load() > 0 || reset.IsZero() || time.Now().After(reset) {
 			r.mu.Unlock()
+
 			return
 		}
 
 		if r.waitCh == nil {
 			ch := make(chan struct{})
+
 			r.waitCh = ch
 			go func(ch chan struct{}, reset time.Time) {
 				sleep := time.Until(reset)
 				if sleep > 5*time.Minute {
 					sleep = 5 * time.Minute
 				}
+
 				time.Sleep(sleep)
 				r.mu.Lock()
 				close(ch)
+
 				r.waitCh = nil
 				r.mu.Unlock()
 			}(ch, reset)
@@ -84,13 +90,14 @@ func (r *RateLimit) waitIfNeeded() {
 }
 
 func (r *RateLimit) updateFromResponse(resp *http.Response) error {
-	if limitStr := resp.Header.Get("RateLimit-Limit"); limitStr != "" {
+	if limitStr := resp.Header.Get("Ratelimit-Limit"); limitStr != "" {
 		lim, err := strconv.Atoi(limitStr)
 		if err != nil {
 			return err
 		}
+
 		if lim > 0 && lim <= math.MaxInt32 {
-			r.limit.Store(int32(lim))
+			r.limit.Store(int32(lim)) //nolint:gosec // bounded to MaxInt32 above
 		}
 	}
 
@@ -100,28 +107,32 @@ func (r *RateLimit) updateFromResponse(resp *http.Response) error {
 		} else if t, err := http.ParseTime(retryAfter); err == nil {
 			r.resetAt.Store(t)
 		}
-	} else if resetStr := resp.Header.Get("RateLimit-Reset"); resetStr != "" {
+	} else if resetStr := resp.Header.Get("Ratelimit-Reset"); resetStr != "" {
 		secs, err := strconv.Atoi(resetStr)
 		if err != nil {
 			return err
 		}
+
 		r.resetAt.Store(time.Now().Add(time.Duration(secs) * time.Second))
 	} else if resp.StatusCode == http.StatusTooManyRequests {
 		r.resetAt.Store(time.Now().Add(time.Second))
 	}
 
-	remStr := resp.Header.Get("RateLimit-Remaining")
+	remStr := resp.Header.Get("Ratelimit-Remaining")
 	if remStr == "" {
 		return nil
 	}
+
 	rem, err := strconv.Atoi(remStr)
 	if err != nil {
 		return err
 	}
+
 	if rem >= 0 && rem <= math.MaxInt32 {
-		r.remaining.Store(int32(rem))
+		r.remaining.Store(int32(rem)) //nolint:gosec // bounded to MaxInt32 above
 	} else {
 		r.remaining.Store(-1)
 	}
+
 	return nil
 }

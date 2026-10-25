@@ -11,9 +11,12 @@ func (p Params) Get[T any](k string) T {
 	val, ok := p[k]
 	if !ok {
 		var zero T
+
 		return zero
 	}
+
 	typed, _ := val.(T)
+
 	return typed
 }
 
@@ -27,6 +30,7 @@ func (p Params) Del(k string) {
 
 func (p Params) Has(k string) bool {
 	_, ok := p[k]
+
 	return ok
 }
 
@@ -34,20 +38,24 @@ func (p Params) buildURL(full string) string {
 	if len(p) == 0 {
 		return full
 	}
+
 	u, err := url.Parse(full)
 	if err != nil {
 		return full
 	}
 
 	q := u.Query()
+
 	for k, v := range p {
 		if v == nil {
 			continue
 		}
+
 		val := fmt.Sprint(v)
 		if val == "" {
 			continue
 		}
+
 		q.Set(k, val)
 	}
 
