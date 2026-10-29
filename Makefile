@@ -3,10 +3,10 @@ BINARY_NAME ?= go-hypixel-api
 .PHONY: lint lint-fix test build clean security ci release dry-release
 
 lint:
-	golangci-lint run
+	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0 run
 
 lint-fix:
-	golangci-lint run --fix
+	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0 run --fix
 
 test:
 	go test $(if $(filter 1,$(shell go env CGO_ENABLED)),-race) ./...

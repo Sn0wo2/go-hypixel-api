@@ -33,6 +33,7 @@ jobs:
         id: lint
         continue-on-error: true
         with:
+          version: latest
           args: --fix
 
       - name: Save lint fixes
